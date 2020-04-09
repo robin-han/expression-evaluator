@@ -1,5 +1,5 @@
 # Expression Evaluator
-Expression Evaluator is a runtime evaluator for parser a string to linq expression tree then create lambda expression to compile to evaluate its value. Types are resolved like dynamic language.
+Expression Evaluator is a runtime evaluator for parser a string to linq expression tree then create lambda expression and compile to evaluate its value. Types are resolved like dynamic language.
 
 # Get Started
 * Target framework: netstandard2.0
