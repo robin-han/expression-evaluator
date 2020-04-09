@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections;
-using System.Collections.Generic;
 using System.Reflection;
 
 namespace Code.Expressions.CSharp
@@ -19,10 +18,10 @@ namespace Code.Expressions.CSharp
         public static ExpressionValue Property(object instance, string name)
         {
             instance = CoerceInstance(instance);
-            if (instance is IDictionary<string, object>)
+            if (instance is IDictionary)
             {
-                IDictionary<string, object> dic = (IDictionary<string, object>)instance;
-                if (dic.ContainsKey(name))
+                IDictionary dic = (IDictionary)instance;
+                if (dic.Contains(name))
                 {
                     return new ExpressionValue(dic[name]);
                 }
