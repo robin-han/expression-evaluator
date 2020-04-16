@@ -74,7 +74,7 @@ namespace Code.Expressions.CSharp
             }
             else if (IsTimeSpan(value))
             {
-                return new ExpressionValue(-(TimeSpan)value);
+                return new ExpressionValue(-ToTimeSpan(value));
             }
             else
             {
@@ -132,11 +132,11 @@ namespace Code.Expressions.CSharp
             }
             else if (IsDateTime(v1) && IsTimeSpan(v2))
             {
-                return new ExpressionValue((DateTime)v1 + (TimeSpan)v2);
+                return new ExpressionValue(ToDateTime(v1) + ToTimeSpan(v2));
             }
             else if (IsTimeSpan(v1) && IsTimeSpan(v2))
             {
-                return new ExpressionValue((TimeSpan)v1 + (TimeSpan)v2);
+                return new ExpressionValue(ToTimeSpan(v1) + ToTimeSpan(v2));
             }
             else
             {
@@ -161,15 +161,15 @@ namespace Code.Expressions.CSharp
             }
             else if (IsDateTime(v1) && IsDateTime(v2))
             {
-                return new ExpressionValue((DateTime)v1 - (DateTime)v2);
+                return new ExpressionValue(ToDateTime(v1) - ToDateTime(v2));
             }
             else if (IsDateTime(v1) && IsTimeSpan(v2))
             {
-                return new ExpressionValue((DateTime)v1 - (TimeSpan)v2);
+                return new ExpressionValue(ToDateTime(v1) - ToTimeSpan(v2));
             }
             else if (IsTimeSpan(v1) && IsTimeSpan(v2))
             {
-                return new ExpressionValue((TimeSpan)v1 - (TimeSpan)v2);
+                return new ExpressionValue(ToTimeSpan(v1) - ToTimeSpan(v2));
             }
             else
             {
@@ -496,7 +496,7 @@ namespace Code.Expressions.CSharp
             }
             else if (IsNumber(value))
             {
-                double d = Convert.ToDouble(value);
+                double d = ToDouble(value);
                 return (d != 0);
             }
             else if (IsString(value))
@@ -508,6 +508,28 @@ namespace Code.Expressions.CSharp
             {
                 return value != null;
             }
+        }
+
+        /// <summary>
+        /// Convert value to datetime. 
+        /// </summary>
+        /// <param name="value">The value object.</param>
+        /// <returns>The datetime object.</returns>
+        private static DateTime ToDateTime(object value)
+        {
+            value = GetActualObject(value);
+            return Convert.ToDateTime(value);
+        }
+
+        /// <summary>
+        /// Convert to timespan.
+        /// </summary>
+        /// <param name="value">The value object.</param>
+        /// <returns>The timespan object.</returns>
+        private static TimeSpan ToTimeSpan(object value)
+        {
+            value = GetActualObject(value);
+            return (TimeSpan)value;
         }
 
         /// <summary>
@@ -590,6 +612,12 @@ namespace Code.Expressions.CSharp
                 string ys = ToString(y);
                 return xs.CompareTo(ys);
             }
+            else if (IsBoolean(x) && IsBoolean(y))
+            {
+                bool xb = ToBoolean(x);
+                bool yb = ToBoolean(y);
+                return xb.CompareTo(yb);
+            }
             else
             {
                 throw new EvaluateException($"Cannot compare the two object {x.GetType().FullName} and {y.GetType().FullName}");
@@ -605,6 +633,16 @@ namespace Code.Expressions.CSharp
         private static bool IsString(object obj)
         {
             return obj is string;
+        }
+
+        /// <summary>
+        /// Check whether object is boolean object. 
+        /// </summary>
+        /// <param name="obj">The object.</param>
+        /// <returns>true if the object is boolean object, otherwise false.</returns>
+        private static bool IsBoolean(object obj)
+        {
+            return obj is bool;
         }
 
         /// <summary>
@@ -645,6 +683,20 @@ namespace Code.Expressions.CSharp
         public static bool IsTimeSpan(object obj)
         {
             return obj is TimeSpan;
+        }
+
+        /// <summary>
+        /// Get the actual object
+        /// </summary>
+        /// <param name="obj">The wrap object.</param>
+        /// <returns>The actual object if it is a wrap object, otherwise the given object.</returns>
+        private static object GetActualObject(object obj)
+        {
+            if (obj is ExpressionValue)
+            {
+                obj = ((ExpressionValue)obj).Value;
+            }
+            return obj;
         }
 
         /// <summary>
