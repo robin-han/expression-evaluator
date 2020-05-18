@@ -93,12 +93,16 @@ namespace Code.Expressions.CSharp.Tests
             Assert.AreEqual(true, evaluator.Evaluate("90 < 100"));
             Assert.AreEqual(true, evaluator.Evaluate("100 <= 100"));
             Assert.AreEqual(false, evaluator.Evaluate("101 <= 100"));
+            Assert.AreEqual(true, evaluator.Evaluate("\"abc\" < \"sde\""));
+            Assert.AreEqual(true, evaluator.Evaluate("\"100\" < 200"));
 
             // >,>=
             Assert.AreEqual(false, evaluator.Evaluate("100 > 100"));
             Assert.AreEqual(true, evaluator.Evaluate("101 > 100"));
             Assert.AreEqual(true, evaluator.Evaluate("100 >= 100"));
             Assert.AreEqual(false, evaluator.Evaluate("90 >= 100"));
+            Assert.AreEqual(false, evaluator.Evaluate("\"abc\" > \"sde\""));
+            Assert.AreEqual(false, evaluator.Evaluate("\"100\" > 200"));
 
             // <<, >>
             Assert.AreEqual(400L, evaluator.Evaluate("100 << 2"));

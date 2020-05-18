@@ -9,6 +9,10 @@ namespace Code.Expressions.CSharp
     /// </summary>
     internal class ExpressionValue
     {
+        #region Fields
+        private static readonly DateTime BASE_UTC_DATETIME = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+        #endregion
+
         #region Constructor
         /// <summary>
         /// Initializes a new instance of the InvokeValue class.
@@ -435,10 +439,7 @@ namespace Code.Expressions.CSharp
         /// <returns>The converted string.</returns>
         private static string ToString(object value)
         {
-            if (value is ExpressionValue)
-            {
-                value = ((ExpressionValue)value).Value;
-            }
+            value = GetActualObject(value);
 
             return Convert.ToString(value);
         }
@@ -450,12 +451,38 @@ namespace Code.Expressions.CSharp
         /// <returns>The double value.</returns>
         private static double ToDouble(object value)
         {
-            if (value is ExpressionValue)
-            {
-                value = ((ExpressionValue)value).Value;
-            }
+            value = GetActualObject(value);
 
-            return Convert.ToDouble(value);
+            if (value == null)
+            {
+                return 0;
+            }
+            if (IsNumber(value))
+            {
+                return Convert.ToDouble(value);
+            }
+            if (IsBoolean(value))
+            {
+                return ToBoolean(value) ? 1 : 0;
+            }
+            if (IsString(value))
+            {
+                string valueString = ToString(value);
+                if (double.TryParse(valueString, out double d))
+                {
+                    return d;
+                }
+                return double.NaN;
+            }
+            if (IsDateTime(value))
+            {
+                return (ToDateTime(value) - BASE_UTC_DATETIME).TotalMilliseconds;
+            }
+            if (IsTimeSpan(value))
+            {
+                return ToTimeSpan(value).TotalMilliseconds;
+            }
+            return double.NaN;
         }
 
         /// <summary>
@@ -485,29 +512,27 @@ namespace Code.Expressions.CSharp
         /// <returns></returns>
         private static bool ToBoolean(object value)
         {
-            if (value is ExpressionValue)
-            {
-                value = ((ExpressionValue)value).Value;
-            }
+            value = GetActualObject(value);
 
-            if (value is bool)
+            if (value == null)
             {
-                return (bool)value;
+                return false;
             }
-            else if (IsNumber(value))
+            if (IsBoolean(value))
+            {
+                return Convert.ToBoolean(value);
+            }
+            if (IsNumber(value))
             {
                 double d = ToDouble(value);
                 return (d != 0);
             }
-            else if (IsString(value))
+            if (IsString(value))
             {
                 string s = (string)value;
                 return !string.IsNullOrEmpty(s);
             }
-            else
-            {
-                return value != null;
-            }
+            return true;
         }
 
         /// <summary>
@@ -540,28 +565,17 @@ namespace Code.Expressions.CSharp
         /// <returns>-1:x<y; 0:x==y; 1:x>y </returns>
         private static int Compare(object x, object y)
         {
-            if (x is ExpressionValue)
-            {
-                x = ((ExpressionValue)x).Value;
-            }
-            if (y is ExpressionValue)
-            {
-                y = ((ExpressionValue)y).Value;
-            }
+            x = GetActualObject(x);
+            y = GetActualObject(y);
 
             //
-            if ((x == null && y == null) || object.ReferenceEquals(x, y))
+            if (object.ReferenceEquals(x, y))
             {
                 return 0;
             }
-            if (x == null && y != null)
-            {
-                return -1;
-            }
-            if (x != null && y == null)
-            {
-                return 1;
-            }
+
+            if (IsBoolean(x) || IsDateTime(x) || IsTimeSpan(x)) { x = ToDouble(x); }
+            if (IsBoolean(y) || IsDateTime(y) || IsTimeSpan(y)) { y = ToDouble(y); }
 
             if (x is IList && y is IList)
             {
@@ -587,8 +601,8 @@ namespace Code.Expressions.CSharp
             }
 
             //
-            Type xType = x.GetType();
-            Type yType = y.GetType();
+            Type xType = x?.GetType();
+            Type yType = y?.GetType();
             if (x is IComparable && (xType == yType || xType.IsAssignableFrom(yType)))
             {
                 return ((IComparable)x).CompareTo(y);
@@ -600,28 +614,32 @@ namespace Code.Expressions.CSharp
             }
 
             //
-            if (IsNumber(x) && IsNumber(y))
+            bool xIsNumber = IsNumber(x);
+            bool yIsNumber = IsNumber(y);
+            if (xIsNumber || yIsNumber)
             {
-                double xd = ToDouble(x);
-                double yd = ToDouble(y);
-                return xd.CompareTo(yd);
+                x = (x == null ? 0 : x);
+                y = (y == null ? 0 : y);
+
+                if (xIsNumber && yIsNumber)
+                {
+                    double x1 = ToDouble(x);
+                    double y1 = ToDouble(y);
+                    return (x1 == y1 ? 0 : (x1 > y1 ? 1 : -1));
+                }
+                if (xIsNumber && IsString(y) && double.TryParse(ToString(y), out double y2))
+                {
+                    double x2 = ToDouble(x);
+                    return (x2 == y2 ? 0 : (x2 > y2 ? 1 : -1));
+                }
+                if (yIsNumber && IsString(x) && double.TryParse(ToString(x), out double x3))
+                {
+                    double y3 = ToDouble(y);
+                    return (x3 == y3 ? 0 : (x3 > y3 ? 1 : -1));
+                }
+                return -2;
             }
-            else if (IsString(x) || IsString(y))
-            {
-                string xs = ToString(x);
-                string ys = ToString(y);
-                return xs.CompareTo(ys);
-            }
-            else if (IsBoolean(x) && IsBoolean(y))
-            {
-                bool xb = ToBoolean(x);
-                bool yb = ToBoolean(y);
-                return xb.CompareTo(yb);
-            }
-            else
-            {
-                throw new EvaluateException($"Cannot compare the two object {x.GetType().FullName} and {y.GetType().FullName}");
-            }
+            return (Equals(x, y) ? 0 : -2);
         }
 
 
