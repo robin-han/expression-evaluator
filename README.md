@@ -24,3 +24,5 @@ evaluator.Evaluate("d.items[4]"); //5
 evaluator.Evaluate("(1+(3-1)*4)/3"); //3d
 ```
 
+## License
+Distributed under the MIT license
